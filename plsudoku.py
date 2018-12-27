@@ -1,11 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+#========================================================================================
+# title           : plsudoku.py
+# description     : GUI for a prolog sudoku solver.
+# author          : Carlos Manuel Rodríguez Martínez.
+# usage           : python plsudoku.py
+# python_version  : 3.7
+# license         : Public domain.
+#========================================================================================
+
 import sys
+
+# GUI libary.
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QApplication, QPushButton, QTableWidget, QTableWidgetItem
 from PySide2.QtCore import QFile, QObject
 from PySide2.QtGui import QColor
+
+# Prolog bindings.
 from pyswip import Prolog
 
 class Form(QObject):
@@ -44,18 +57,19 @@ class Form(QObject):
 
         self.window.show()
 
-    def ok_handler(self):
-        puzzle = [[self.get_value_at(x,y) for y in range(9)] for x in range(9)]
-        solution = self.solve_puzzle(puzzle)
+    def ok_handler(self): # This is what happens when the user clicks the "Solve" button.
+        puzzle = [[self.get_value_at(x,y) for y in range(9)] for x in range(9)] # Fill the variable puzzle with all the entries of the board organized by rows.
+        solution = self.solve_puzzle(puzzle) # Solve puzzle using prolog.
+
         if solution != False:
             for y in range(9):
                 for x in range(9):
-                    self.set_value_at(y, x, solution[y][x])
+                    self.set_value_at(y, x, solution[y][x]) # Fill the board.
             self.window.update()
         else:
-            print("You fucked up")
+            print("Prolog can't solve this board")
 
-    def get_item_value(self, item):
+    def get_item_value(self, item): # Parse item
         if(hasattr(item, 'text')):
             if item.text() != ' ' and item.text() != '':
                 return int(item.text())
@@ -64,7 +78,7 @@ class Form(QObject):
         else:
             return 0
 
-    def get_value_at(self, x, y):
+    def get_value_at(self, x, y): # Get item value at position (x,y). This is used to reference a board made of 9 different widgets.
         horizontal = int(y / 3)
         horizontalIndex = y % 3
         vertical = int(x / 3)
@@ -92,7 +106,7 @@ class Form(QObject):
             else:
                 return self.get_item_value(self.bottomRight.item(verticalIndex, horizontalIndex))
 
-    def set_item_value(self, item, value):
+    def set_item_value(self, item, value):  # Color item
         if (hasattr(item, 'text')):
             if item.text() != ' ' and item.text() != '':
                 item.setText(value)
@@ -103,7 +117,7 @@ class Form(QObject):
             item = QTableWidgetItem(value)
             item.setTextColor(QColor("green"))
 
-    def set_value_at(self, x, y, value):
+    def set_value_at(self, x, y, value): # Set item value at position (x,y). This is used to reference a board made of 9 different widgets.
         nvalue = str(value)
         newItem = QTableWidgetItem(nvalue)
         current_value = self.get_value_at(x, y)
@@ -137,7 +151,7 @@ class Form(QObject):
             else:
                 self.bottomRight.setItem(verticalIndex, horizontalIndex, newItem)
 
-    def reset_handler(self):
+    def reset_handler(self): # This is what happens when the user clicks the "Reset" button.
         self.topLeft.clearContents()
         self.topMiddle.clearContents()
         self.topRight.clearContents()
@@ -148,7 +162,7 @@ class Form(QObject):
         self.bottomMiddle.clearContents()
         self.bottomRight.clearContents()
 
-    def solve_puzzle(self, puzzle):
+    def solve_puzzle(self, puzzle): # Invokes prolog solver
         p = str(puzzle).replace("0", "_")
         result = list(self.prolog.query("L=%s,solve_sudoku(L)" % p, maxresult=1))
         if result:
